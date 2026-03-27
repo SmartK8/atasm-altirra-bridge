@@ -37,7 +37,8 @@ export class MadsAssemblerRunner extends AssemblerRunnerBase {
 
 		// Get the filename where the compiling starts.
 		// If its undefined or blank then use the default
-		this.InputFileName = (this.BuildConfig.input && this.BuildConfig.input.trim().length > 0)  ? this.BuildConfig.input : await this.GetDefaultOrFirstAsmFilename("theapp.asm");
+		const configuredInput = this.ResolveInputSpecifier(this.BuildConfig.input)?.trim() ?? "";
+		this.InputFileName = configuredInput.length > 0 ? configuredInput : await this.GetDefaultOrFirstAsmFilename("theapp.asm");
 		this.InputFileNameBase = path.parse(this.InputFileName).name;
 
 		// Set where the assembler output goes or default to "out"
@@ -332,7 +333,8 @@ export class MadsAssemblerRunner extends AssemblerRunnerBase {
 
 		// Get the filename where the compiling starts.
 		// If its undefined or blank then use the default
-		this.InputFileName = (this.BuildConfig.input && this.BuildConfig.input.trim().length > 0)  ? this.BuildConfig.input : await this.GetDefaultOrFirstAsmFilename("theapp.asm");
+		const configuredInput = this.ResolveInputSpecifier(this.BuildConfig.input)?.trim() ?? "";
+		this.InputFileName = configuredInput.length > 0 ? configuredInput : await this.GetDefaultOrFirstAsmFilename("theapp.asm");
 		this.InputFileNameBase = path.parse(this.InputFileName).name;
 
 		// Set where the assembler output goes or default to "out"

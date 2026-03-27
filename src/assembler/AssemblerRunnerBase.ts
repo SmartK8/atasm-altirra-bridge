@@ -97,6 +97,38 @@ export abstract class AssemblerRunnerBase implements vscode.Disposable {
 		".s",
 		".m65"
 	];
+
+	protected GetActiveAsmRelativePath(): string | undefined {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) { return undefined; }
+
+		const file = editor.document.uri.fsPath;
+		const ext = path.extname(file).toLocaleLowerCase();
+		if (!this.Extensions.includes(ext)) { return undefined; }
+
+		if (!this.WorkspaceFolder) { return file; }
+		return path.relative(this.WorkspaceFolder, file);
+	}
+
+	protected ResolveInputSpecifier(value: string | undefined): string | undefined {
+		if (!value) { return value; }
+
+		const v = value.trim();
+		const active = this.GetActiveAsmRelativePath();
+
+		switch (v) {
+			case "${file}":
+			case "${activeAsmFile}":
+			case "${activeAsmRelative}":
+				return active ?? v;
+			case "${fileBasename}":
+			case "${activeAsmBasename}":
+				return active ? path.basename(active) : v;
+			default:
+				return v;
+		}
+	}
+
 	protected async GetDefaultOrFirstAsmFilename(hardDefault: string): Promise<string> {
 		if (!this.Configuration) {
 			// There is no configuration, so not much to check
@@ -104,7 +136,9 @@ export abstract class AssemblerRunnerBase implements vscode.Disposable {
 		}
 
 		// 1. Get the configured default filename
-		let defaultBuildFilename = this.Configuration.get<string>("application.configuration.defaultAsmFileToAssemble", "").trim();
+		let defaultBuildFilename = this.ResolveInputSpecifier(
+			this.Configuration.get<string>("application.configuration.defaultAsmFileToAssemble", "")
+		)?.trim() ?? "";
 
 		if (defaultBuildFilename && defaultBuildFilename.length > 0) {
 			// Got a default filename.
@@ -114,11 +148,10 @@ export abstract class AssemblerRunnerBase implements vscode.Disposable {
 		// Got no default file.
 		// 2. Check if the current open file is an assembler file
 		let doCurrentEditorFile = this.Configuration.get<boolean>("application.configuration.assembleCurrentAsmFile", true);
-		if (doCurrentEditorFile && vscode.window.activeTextEditor) {
-			let currentEditorFileExt = path.extname(vscode.window.activeTextEditor.document.uri.path).toLocaleLowerCase();
-			if (this.Extensions.find(ex => ex === currentEditorFileExt)) {
-				// The current editor file is an assembler file
-				return path.basename(vscode.window.activeTextEditor.document.uri.path);
+		if (doCurrentEditorFile) {
+			const activeAsmFile = this.GetActiveAsmRelativePath();
+			if (activeAsmFile) {
+				return activeAsmFile;
 			}
 		}
 		// 3. Find the first assembler file in the folder
